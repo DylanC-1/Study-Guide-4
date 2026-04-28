@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Warehousing & OLAP — Study Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e2a;
+    --border: #242836;
+    --accent: #5b8dee;
+    --accent2: #e8a95b;
+    --accent3: #7ee8a2;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --danger: #f06b6b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Starfield background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 20%, rgba(91,141,238,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 70%, rgba(232,169,91,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 30%, rgba(126,232,162,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 80%, rgba(91,141,238,0.3) 0%, transparent 100%),
+      radial-gradient(2px 2px at 25% 50%, rgba(232,169,91,0.2) 0%, transparent 100%),
+      radial-gradient(2px 2px at 60% 15%, rgba(91,141,238,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 60%, rgba(126,232,162,0.2) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* Header */
+  header {
+    padding: 48px 24px 32px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 1;
+  }
+
+  header .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    font-weight: 900;
+    line-height: 1.1;
+    background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 300;
+  }
+
+  /* Nav tabs */
+  nav {
+    display: flex;
+    gap: 4px;
+    padding: 20px 24px;
+    position: sticky;
+    top: 0;
+    background: rgba(13, 15, 20, 0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+  }
+
+  nav button {
+    flex: 1;
+    padding: 10px 16px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  nav button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  nav button:hover:not(.active) {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  /* Sections */
+  section { display: none; padding: 40px 24px 80px; }
+  section.active { display: block; }
+
+  /* Section headers */
+  .section-header {
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .section-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--surface2);
+    color: var(--accent);
+    border: 1px solid var(--border);
+  }
+
+  /* ===== FLASHCARDS ===== */
+  .flashcard-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 120px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+
+  .card-counter {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .flashcard-scene {
+    perspective: 1200px;
+    width: 100%;
+    max-width: 640px;
+    height: 300px;
+    margin: 0 auto 32px;
+    cursor: pointer;
+  }
+
+  .flashcard-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .flashcard-inner.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: 16px;
+    padding: 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border: 1px solid var(--border);
+  }
+
+  .card-front {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface2) 100%);
+  }
+
+  .card-back {
+    background: linear-gradient(135deg, #141a2e 0%, #0e1520 100%);
+    border-color: rgba(91,141,238,0.3);
+    transform: rotateY(180deg);
+  }
+
+  .card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .card-front .card-label { color: var(--accent2); }
+  .card-back .card-label { color: var(--accent3); }
+
+  .card-term {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.3rem, 3vw, 1.8rem);
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text);
+  }
+
+  .card-definition {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #c8cdd8;
+    font-weight: 300;
+  }
+
+  .flip-hint {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: -16px;
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+  }
+
+  .card-nav {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .btn {
+    padding: 12px 28px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: #4a7de8; color: #fff; border-color: #4a7de8; }
+
+  .shuffle-btn {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+  }
+  .shuffle-btn:hover { color: var(--accent2); border-color: var(--accent2); }
+
+  /* Category filter */
+  .category-filter {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .cat-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+
+  .cat-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: var(--accent);
+  }
+
+  /* ===== QUIZ ===== */
+  .quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .quiz-meta {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .quiz-score-live {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent3);
+  }
+
+  .quiz-q-counter {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.4s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-category {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 16px;
+  }
+
+  .q-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    line-height: 1.5;
+    margin-bottom: 24px;
+    color: var(--text);
+  }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  @media (max-width: 560px) { .options-grid { grid-template-columns: 1fr; } }
+
+  .option-btn {
+    padding: 14px 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.4;
+    transition: all 0.2s;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .option-btn:hover:not(:disabled) { border-color: var(--accent); background: rgba(91,141,238,0.08); }
+
+  .option-btn.correct {
+    border-color: var(--accent3);
+    background: rgba(126,232,162,0.1);
+    color: var(--accent3);
+  }
+
+  .option-btn.wrong {
+    border-color: var(--danger);
+    background: rgba(240,107,107,0.1);
+    color: var(--danger);
+  }
+
+  .option-letter {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .feedback-msg {
+    margin-top: 20px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.6;
+    display: none;
+  }
+
+  .feedback-msg.show { display: block; animation: fadeUp 0.3s ease; }
+  .feedback-msg.correct { background: rgba(126,232,162,0.1); border: 1px solid rgba(126,232,162,0.3); color: var(--accent3); }
+  .feedback-msg.wrong { background: rgba(240,107,107,0.1); border: 1px solid rgba(240,107,107,0.3); color: #f9a8a8; }
+
+  .quiz-nav {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+
+  /* Results */
+  .quiz-results {
+    text-align: center;
+    padding: 60px 24px;
+    display: none;
+    animation: fadeUp 0.5s ease;
+  }
+
+  .quiz-results.show { display: block; }
+
+  .result-score {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(4rem, 12vw, 8rem);
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .result-score.great { color: var(--accent3); }
+  .result-score.ok { color: var(--accent2); }
+  .result-score.poor { color: var(--danger); }
+
+  .result-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .result-breakdown {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+
+  .result-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 28px;
+    min-width: 120px;
+  }
+
+  .result-stat .num {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    display: block;
+  }
+
+  .result-stat .lbl {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+    display: block;
+    margin-top: 4px;
+  }
+
+  .result-stat.good .num { color: var(--accent3); }
+  .result-stat.bad .num { color: var(--danger); }
+
+  /* Review panel */
+  .review-list { margin-top: 40px; text-align: left; }
+
+  .review-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 12px;
+    border-left: 3px solid var(--border);
+  }
+
+  .review-item.correct { border-left-color: var(--accent3); }
+  .review-item.wrong { border-left-color: var(--danger); }
+
+  .review-q { font-size: 14px; margin-bottom: 8px; color: var(--text); }
+  .review-your { font-size: 13px; color: var(--danger); margin-bottom: 4px; font-family: 'DM Mono', monospace; }
+  .review-correct { font-size: 13px; color: var(--accent3); font-family: 'DM Mono', monospace; }
+
+  /* Cheat sheet */
+  .cheatsheet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .cs-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+
+  .cs-card:hover { border-color: var(--accent); }
+
+  .cs-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--accent2);
+    margin-bottom: 10px;
+  }
+
+  .cs-card p {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #a0a8b8;
+    font-weight: 300;
+  }
+
+  .cs-card code {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .flashcard-scene { height: 260px; }
+    .card-face { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="eyebrow">Chapter 4 · Data Mining</span>
+  <h1>Data Warehousing & OLAP</h1>
+  <p>Flashcards · Quiz · Cheat Sheet — everything you need to ace this chapter</p>
+</header>
+
+<nav>
+  <button class="active" onclick="showSection('flashcards', this)">⬡ Flashcards</button>
+  <button onclick="showSection('quiz', this)">◎ Quiz</button>
+  <button onclick="showSection('cheatsheet', this)">≡ Cheat Sheet</button>
+</nav>
+
+<!-- ======== FLASHCARDS ======== -->
+<section id="flashcards" class="active">
+  <div class="container">
+    <div class="section-header">
+      <h2>Flashcards</h2>
+      <span class="badge" id="fc-badge">30 cards</span>
+    </div>
+
+    <div class="category-filter">
+      <button class="cat-btn active" onclick="filterCards('all', this)">All</button>
+      <button class="cat-btn" onclick="filterCards('basics', this)">Basics</button>
+      <button class="cat-btn" onclick="filterCards('modeling', this)">Modeling</button>
+      <button class="cat-btn" onclick="filterCards('olap', this)">OLAP Ops</button>
+      <button class="cat-btn" onclick="filterCards('impl', this)">Implementation</button>
+    </div>
+
+    <div class="flashcard-controls">
+      <div style="display:flex;align-items:center;gap:12px;flex:1">
+        <div class="progress-bar"><div class="progress-fill" id="fc-progress" style="width:3%"></div></div>
+        <span class="card-counter" id="fc-counter">1 / 30</span>
+      </div>
+      <button class="shuffle-btn" onclick="shuffleCards()" title="Shuffle">⇌ Shuffle</button>
+    </div>
+
+    <div class="flashcard-scene" onclick="flipCard()">
+      <div class="flashcard-inner" id="card-inner">
+        <div class="card-face card-front">
+          <div class="card-label">Term</div>
+          <div class="card-term" id="card-term">Loading...</div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-label">Definition</div>
+          <div class="card-definition" id="card-def">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="flip-hint">↑ click card to flip</p>
+
+    <div class="card-nav">
+      <button class="btn" onclick="prevCard()">← Prev</button>
+      <button class="btn btn-primary" onclick="nextCard()">Next →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ======== QUIZ ======== -->
+<section id="quiz">
+  <div class="container">
+    <div id="quiz-area">
+      <div class="quiz-header">
+        <div class="section-header" style="margin-bottom:0">
+          <h2>Quiz</h2>
+        </div>
+        <div class="quiz-meta">
+          <span class="quiz-score-live" id="score-live">Score: 0</span>
+          <span class="quiz-q-counter" id="q-counter">Q 1 / 15</span>
+        </div>
+      </div>
+
+      <div class="progress-bar" style="margin-bottom:28px;height:6px">
+        <div class="progress-fill" id="quiz-progress" style="width:0%"></div>
+      </div>
+
+      <div class="question-card" id="question-card">
+        <div class="q-category" id="q-cat"></div>
+        <div class="q-text" id="q-text"></div>
+        <div class="options-grid" id="options-grid"></div>
+        <div class="feedback-msg" id="feedback"></div>
+      </div>
+
+      <div class="quiz-nav">
+        <button class="btn btn-primary" id="next-q-btn" onclick="nextQuestion()" style="display:none">Next Question →</button>
+      </div>
+    </div>
+
+    <div class="quiz-results" id="quiz-results">
+      <div class="result-score" id="result-pct"></div>
+      <div class="result-label" id="result-grade"></div>
+      <div class="result-breakdown">
+        <div class="result-stat good"><span class="num" id="r-correct">0</span><span class="lbl">Correct</span></div>
+        <div class="result-stat bad"><span class="num" id="r-wrong">0</span><span class="lbl">Wrong</span></div>
+        <div class="result-stat"><span class="num" id="r-total">0</span><span class="lbl">Total</span></div>
+      </div>
+      <button class="btn btn-primary" onclick="resetQuiz()">Retake Quiz</button>
+      <div class="review-list" id="review-list"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== CHEAT SHEET ======== -->
+<section id="cheatsheet">
+  <div class="container">
+    <div class="section-header">
+      <h2>Cheat Sheet</h2>
+      <span class="badge">Quick Reference</span>
+    </div>
+    <div class="cheatsheet-grid" id="cs-grid"></div>
+  </div>
+</section>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const flashcards = [
+  { cat: 'basics', term: 'Data Warehouse', def: 'A subject-oriented, integrated, time-variant, and nonvolatile collection of data in support of management\'s decision-making process. (W.H. Inmon)' },
+  { cat: 'basics', term: 'Subject-Oriented', def: 'Organized around major subjects (customer, product, sales) rather than transactions; focused on modeling and analysis for decision makers.' },
+  { cat: 'basics', term: 'Integrated', def: 'Constructed by integrating multiple heterogeneous data sources (relational DBs, flat files, OLTP records) with cleaned, consistent data.' },
+  { cat: 'basics', term: 'Time-Variant', def: 'Contains historical data (5–10 years), unlike operational systems that hold current data. Every key structure contains an explicit or implicit time element.' },
+  { cat: 'basics', term: 'Nonvolatile', def: 'Data is not updated in the warehouse. Only two operations exist: initial loading and access. No transaction processing or concurrency control needed.' },
+  { cat: 'basics', term: 'OLTP', def: 'Online Transaction Processing — day-to-day operational systems used by clerks/IT, storing current detailed data with short simple transactions.' },
+  { cat: 'basics', term: 'OLAP', def: 'Online Analytical Processing — decision support for knowledge workers using historical, summarized, multidimensional, integrated data and complex queries.' },
+  { cat: 'basics', term: 'ETL', def: 'Extract, Transform, Load — the process of getting data from source systems into the warehouse: extract → clean → transform → load → refresh.' },
+  { cat: 'basics', term: 'Data Mart', def: 'A departmental subset of the data warehouse, scoped to a specific group (e.g. marketing). Uses star or snowflake schema.' },
+  { cat: 'basics', term: 'Metadata Repository', def: 'Stores data about warehouse objects: schema definitions, data lineage, operational metadata, summarization algorithms, and business definitions.' },
+  { cat: 'modeling', term: 'Data Cube', def: 'A multidimensional model for data warehouses. Allows data to be viewed in multiple dimensions simultaneously; n-dimensional in practice.' },
+  { cat: 'modeling', term: 'Dimension Table', def: 'Stores descriptive attributes used to categorize facts. Examples: item(name, brand, type), time(day, week, month, quarter, year).' },
+  { cat: 'modeling', term: 'Fact Table', def: 'Contains measurable, quantitative data (measures) like dollars_sold, plus foreign keys linking to each dimension table.' },
+  { cat: 'modeling', term: 'Cuboid', def: 'A data cube generated by a subset of dimensions. Base cuboid = lowest summarization; apex cuboid (0-D) = highest summarization (total across all).' },
+  { cat: 'modeling', term: 'Lattice of Cuboids', def: 'The complete set of cuboids formed from all possible subsets of n dimensions. Forms the full data cube structure.' },
+  { cat: 'modeling', term: 'Star Schema', def: 'A fact table in the center connected via foreign keys to surrounding dimension tables. Simple, fewer joins; most popular for data marts.' },
+  { cat: 'modeling', term: 'Snowflake Schema', def: 'Refinement of star schema where dimension tables are normalized into smaller sub-tables, reducing redundancy but requiring more joins.' },
+  { cat: 'modeling', term: 'Fact Constellation (Galaxy Schema)', def: 'Multiple fact tables share dimension tables, forming a collection of stars. Used for enterprise-wide data warehouses.' },
+  { cat: 'modeling', term: 'Concept Hierarchy', def: 'A sequence of mappings from low-level concepts to higher-level general concepts (e.g., city → province → country → all).' },
+  { cat: 'modeling', term: 'Measure', def: 'A numeric value in the fact table used for analysis, such as dollars_sold or units_sold.' },
+  { cat: 'olap', term: 'Roll-Up (Drill-Up)', def: 'Summarizes data by climbing a concept hierarchy or reducing dimensions. Example: city-level → country-level sales.' },
+  { cat: 'olap', term: 'Drill-Down (Roll-Down)', def: 'The reverse of roll-up; moves from higher-level summaries to lower-level detail or introduces new dimensions.' },
+  { cat: 'olap', term: 'Slice', def: 'Selects one dimension and produces a sub-cube. Example: fixing time = "Q1" to see all items and locations for Q1.' },
+  { cat: 'olap', term: 'Dice', def: 'Selects two or more dimensions to form a sub-cube. Example: (location = Toronto or Vancouver) AND (time = Q1 or Q2) AND (item = computer or home entertainment).' },
+  { cat: 'olap', term: 'Pivot (Rotate)', def: 'Reorients the data cube for a different visualization perspective; converts a 3D cube into a series of 2D planes.' },
+  { cat: 'olap', term: 'Drill-Across', def: 'An OLAP operation that involves querying across more than one fact table.' },
+  { cat: 'olap', term: 'Drill-Through', def: 'Passes through the bottom level of the cube to access the back-end relational tables directly using SQL.' },
+  { cat: 'impl', term: 'ROLAP', def: 'Relational OLAP — uses relational/extended-relational DBMS as back-end storage with OLAP middleware. Greater scalability than MOLAP.' },
+  { cat: 'impl', term: 'MOLAP', def: 'Multidimensional OLAP — uses sparse array-based multidimensional storage with fast indexing to pre-computed summaries.' },
+  { cat: 'impl', term: 'HOLAP', def: 'Hybrid OLAP — combines ROLAP and MOLAP. Low-level data stored relationally; high-level summaries in multidimensional arrays. (e.g. Microsoft SQL Server)' },
+];
+
+const quizQuestions = [
+  { cat: 'Basics', q: 'Which characteristic of a data warehouse means it is organized around subjects like "customer" or "product" rather than individual transactions?', options: ['Nonvolatile','Subject-Oriented','Time-Variant','Integrated'], answer: 1, explain: 'Subject-oriented means the DW focuses on major subjects for decision support, not daily operations.' },
+  { cat: 'Basics', q: 'A data warehouse maintains historical data spanning 5–10 years. This is described by which characteristic?', options: ['Integrated','Subject-Oriented','Nonvolatile','Time-Variant'], answer: 3, explain: 'Time-variant means the DW provides historical perspectives, unlike operational systems with current data.' },
+  { cat: 'Basics', q: 'In a data warehouse, data cannot be updated—only loaded and accessed. This describes which property?', options: ['Nonvolatile','Integrated','Time-Variant','Subject-Oriented'], answer: 0, explain: 'Nonvolatile means the DW environment does not support operational updates; only initial load and read access.' },
+  { cat: 'OLTP vs OLAP', q: 'Which system is used by knowledge workers for decision support, using ad-hoc complex queries on historical data?', options: ['OLTP','ETL','OLAP','ERP'], answer: 2, explain: 'OLAP (Online Analytical Processing) supports decision making with complex queries on consolidated historical data.' },
+  { cat: 'OLTP vs OLAP', q: 'OLTP databases are typically how large compared to data warehouses?', options: ['100 GB–TB','100 MB–GB','1 TB–PB','Equal in size'], answer: 1, explain: 'OLTP DBs are 100MB–GB, while data warehouses are 100GB–TB due to historical aggregated data.' },
+  { cat: 'Schemas', q: 'Which schema places a single fact table in the center, directly connected to surrounding dimension tables?', options: ['Snowflake Schema','Galaxy Schema','Fact Constellation','Star Schema'], answer: 3, explain: 'Star schema has one fact table connected via foreign keys to dimension tables around it.' },
+  { cat: 'Schemas', q: 'A snowflake schema differs from a star schema primarily by:', options: ['Having multiple fact tables','Normalizing dimension tables into sub-tables','Removing the fact table entirely','Using JSON instead of SQL'], answer: 1, explain: 'Snowflake schema normalizes some dimensional hierarchies into smaller dimension tables to reduce redundancy.' },
+  { cat: 'Schemas', q: 'Which schema is typically used for enterprise-wide data warehouses with multiple interrelated subjects?', options: ['Star Schema','Snowflake Schema','Fact Constellation / Galaxy Schema','ER Schema'], answer: 2, explain: 'Fact constellations (galaxy schema) have multiple fact tables sharing dimension tables, spanning the whole organization.' },
+  { cat: 'Data Cube', q: 'In a data cube with 4 dimensions (time, item, location, supplier), the 0-D cuboid represents:', options: ['The most detailed view','Total sales summarized over all four dimensions','Sales by a single dimension','A 3D cross-section'], answer: 1, explain: 'The apex (0-D) cuboid is the highest level of summarization—the single total across all dimensions.' },
+  { cat: 'Data Cube', q: 'Which component of the data cube model holds the lowest level of summarization?', options: ['Apex cuboid','0-D cuboid','Base cuboid','Slice cuboid'], answer: 2, explain: 'The base cuboid (n-D) holds the most detailed data at the lowest level of summarization.' },
+  { cat: 'OLAP Ops', q: 'An analyst viewing city-level sales then switching to country-level is performing which OLAP operation?', options: ['Drill-Down','Slice','Roll-Up','Pivot'], answer: 2, explain: 'Roll-up (drill-up) summarizes data by climbing a concept hierarchy, e.g., from city to country.' },
+  { cat: 'OLAP Ops', q: 'Filtering a sales cube to show only Q1 data across all items and locations is an example of:', options: ['Dice','Drill-Down','Roll-Up','Slice'], answer: 3, explain: 'Slice selects a single dimension value (time = Q1), producing a 2D plane from the 3D cube.' },
+  { cat: 'OLAP Ops', q: 'Which OLAP operation reorients the cube for a different visual perspective, converting 3D to 2D planes?', options: ['Roll-Up','Pivot','Slice','Dice'], answer: 1, explain: 'Pivot (rotate) reorients the data cube to provide an alternative presentation of the data.' },
+  { cat: 'Implementation', q: 'Which OLAP server architecture uses relational databases as back-end storage with OLAP middleware?', options: ['MOLAP','HOLAP','ROLAP','DOLAP'], answer: 2, explain: 'ROLAP (Relational OLAP) uses relational/extended-relational DBMS for storage with greater scalability.' },
+  { cat: 'Implementation', q: 'HOLAP (Hybrid OLAP) is best described as:', options: ['Only relational storage','Only multidimensional array storage','A combination of ROLAP and MOLAP','An in-memory only approach'], answer: 2, explain: 'HOLAP combines relational (low-level) and multidimensional array (high-level) storage for flexibility.' },
+];
+
+const cheatsheetItems = [
+  { title: 'Inmon\'s 4 Properties', body: 'A data warehouse is: <b>Subject-Oriented</b> (around subjects, not transactions), <b>Integrated</b> (from multiple sources), <b>Time-Variant</b> (5–10 years of history), <b>Nonvolatile</b> (load & read only).' },
+  { title: 'OLTP vs. OLAP at a Glance', body: 'OLTP: clerks, day-to-day ops, E-R model, current/detailed data, repetitive, 100MB–GB, metric = transaction throughput.<br>OLAP: knowledge workers, decision support, star schema, historical/summarized, ad-hoc, 100GB–TB, metric = query throughput.' },
+  { title: 'ETL Pipeline', body: '<b>Extract</b> from heterogeneous sources → <b>Clean</b> errors → <b>Transform</b> to warehouse format → <b>Load</b> (sort, summarize, build indices) → <b>Refresh</b> with updates.' },
+  { title: 'Three Warehouse Models', body: '<b>Enterprise</b>: all subjects, org-wide. <b>Data Mart</b>: department-wide subset (star/snowflake schema). <b>Virtual</b>: views over operational DBs, some materialized.' },
+  { title: 'Schema Types', body: '<b>Star</b>: fact + surrounding dimension tables; fewer joins, most popular. <b>Snowflake</b>: normalized dimensions, less redundancy. <b>Galaxy</b>: multiple fact tables, enterprise-wide.' },
+  { title: 'Data Cube Vocabulary', body: '<code>Measure</code> = numeric value (dollars_sold). <code>Dimension</code> = categorical attribute (time, location). <code>Cuboid</code> = cube for a subset of dims. <code>Apex</code> = 0-D totals. <code>Base</code> = n-D detail.' },
+  { title: 'Concept Hierarchy (Location)', body: 'street → city → province/state → country → all. Enables roll-up and drill-down across geographic levels.' },
+  { title: 'OLAP Operations', body: '<b>Roll-Up</b>: more general (city → country). <b>Drill-Down</b>: more detail (quarter → month). <b>Slice</b>: 1 dim fixed. <b>Dice</b>: 2+ dims fixed. <b>Pivot</b>: reorient view. <b>Drill-Through</b>: reach raw SQL tables.' },
+  { title: 'OLAP Server Types', body: '<b>ROLAP</b>: relational back-end, high scalability. <b>MOLAP</b>: array-based, fast pre-computed indexing. <b>HOLAP</b>: hybrid — relational for detail, arrays for summaries.' },
+  { title: 'Data Warehouse Usage', body: '<b>Information Processing</b>: querying, stats, reports. <b>Analytical Processing</b>: OLAP operations on multidimensional data. <b>Data Mining</b>: hidden pattern discovery, predictive models, visualization.' },
+  { title: 'Starnet Query Model', body: 'A query model showing all concept hierarchies for each dimension axis (time: day→year; location: street→continent; item: name→type; customer: name→group).' },
+  { title: 'Why Separate Warehouse?', body: 'Performance tuning: DBMS tuned for OLTP (concurrency, recovery), DW tuned for OLAP (complex queries, aggregation). Also: DW provides historical data, data consolidation, and consistent data quality from cleaned sources.' },
+];
+
+// ============================================================
+// FLASHCARD LOGIC
+// ============================================================
+let cards = [...flashcards];
+let currentCard = 0;
+let isFlipped = false;
+
+function renderCard() {
+  const c = cards[currentCard];
+  document.getElementById('card-term').textContent = c.term;
+  document.getElementById('card-def').textContent = c.def;
+  const inner = document.getElementById('card-inner');
+  inner.classList.remove('flipped');
+  isFlipped = false;
+  const total = cards.length;
+  document.getElementById('fc-counter').textContent = `${currentCard + 1} / ${total}`;
+  document.getElementById('fc-progress').style.width = `${((currentCard + 1) / total) * 100}%`;
+  document.getElementById('fc-badge').textContent = `${total} cards`;
+}
+
+function flipCard() {
+  isFlipped = !isFlipped;
+  document.getElementById('card-inner').classList.toggle('flipped', isFlipped);
+}
+
+function nextCard() {
+  currentCard = (currentCard + 1) % cards.length;
+  renderCard();
+}
+
+function prevCard() {
+  currentCard = (currentCard - 1 + cards.length) % cards.length;
+  renderCard();
+}
+
+function shuffleCards() {
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  currentCard = 0;
+  renderCard();
+}
+
+function filterCards(cat, btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  cards = cat === 'all' ? [...flashcards] : flashcards.filter(c => c.cat === cat);
+  currentCard = 0;
+  renderCard();
+}
+
+renderCard();
+
+// ============================================================
+// QUIZ LOGIC
+// ============================================================
+let quizData = [];
+let qIndex = 0;
+let score = 0;
+let answered = false;
+let userAnswers = [];
+
+function initQuiz() {
+  quizData = [...quizQuestions].sort(() => Math.random() - 0.5);
+  qIndex = 0; score = 0; answered = false; userAnswers = [];
+  document.getElementById('quiz-area').style.display = 'block';
+  document.getElementById('quiz-results').classList.remove('show');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = quizData[qIndex];
+  document.getElementById('q-cat').textContent = q.cat;
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('q-counter').textContent = `Q ${qIndex + 1} / ${quizData.length}`;
+  document.getElementById('score-live').textContent = `Score: ${score}`;
+  document.getElementById('quiz-progress').style.width = `${(qIndex / quizData.length) * 100}%`;
+  document.getElementById('feedback').className = 'feedback-msg';
+  document.getElementById('next-q-btn').style.display = 'none';
+
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${letters[i]}</span><span>${opt}</span>`;
+    btn.onclick = () => selectAnswer(i);
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('question-card').style.animation = 'none';
+  requestAnimationFrame(() => {
+    document.getElementById('question-card').style.animation = 'fadeUp 0.4s ease';
+  });
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+  const q = quizData[qIndex];
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const isCorrect = idx === q.answer;
+  btns[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) btns[q.answer].classList.add('correct');
+
+  if (isCorrect) score++;
+  userAnswers.push({ q: q.q, yourIdx: idx, correctIdx: q.answer, options: q.options, isCorrect });
+
+  const fb = document.getElementById('feedback');
+  fb.className = `feedback-msg show ${isCorrect ? 'correct' : 'wrong'}`;
+  fb.textContent = isCorrect ? `✓ Correct! ${q.explain}` : `✗ ${q.explain}`;
+
+  document.getElementById('score-live').textContent = `Score: ${score}`;
+  document.getElementById('next-q-btn').style.display = 'block';
+}
+
+function nextQuestion() {
+  qIndex++;
+  if (qIndex >= quizData.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  document.getElementById('quiz-area').style.display = 'none';
+  const results = document.getElementById('quiz-results');
+  results.classList.add('show');
+  const pct = Math.round((score / quizData.length) * 100);
+  const pctEl = document.getElementById('result-pct');
+  pctEl.textContent = `${pct}%`;
+  pctEl.className = `result-score ${pct >= 80 ? 'great' : pct >= 60 ? 'ok' : 'poor'}`;
+  document.getElementById('result-grade').textContent = pct >= 80 ? '— Excellent Work —' : pct >= 60 ? '— Keep Studying —' : '— Review Needed —';
+  document.getElementById('r-correct').textContent = score;
+  document.getElementById('r-wrong').textContent = quizData.length - score;
+  document.getElementById('r-total').textContent = quizData.length;
+  document.getElementById('quiz-progress').style.width = '100%';
+
+  const reviewList = document.getElementById('review-list');
+  reviewList.innerHTML = '<h3 style="font-family:\'Playfair Display\',serif;font-size:1.2rem;margin-bottom:16px;margin-top:8px">Review Answers</h3>';
+  userAnswers.forEach((a, i) => {
+    const div = document.createElement('div');
+    div.className = `review-item ${a.isCorrect ? 'correct' : 'wrong'}`;
+    div.innerHTML = `
+      <div class="review-q">${i + 1}. ${a.q}</div>
+      ${!a.isCorrect ? `<div class="review-your">✗ Your answer: ${a.options[a.yourIdx]}</div>` : ''}
+      <div class="review-correct">✓ ${a.isCorrect ? 'Correct' : 'Answer'}: ${a.options[a.correctIdx]}</div>
+    `;
+    reviewList.appendChild(div);
+  });
+}
+
+function resetQuiz() {
+  initQuiz();
+}
+
+initQuiz();
+
+// ============================================================
+// CHEAT SHEET
+// ============================================================
+const grid = document.getElementById('cs-grid');
+cheatsheetItems.forEach(item => {
+  const card = document.createElement('div');
+  card.className = 'cs-card';
+  card.innerHTML = `<h3>${item.title}</h3><p>${item.body}</p>`;
+  grid.appendChild(card);
+});
+
+// ============================================================
+// NAV
+// ============================================================
+function showSection(id, btn) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'quiz') {
+    document.getElementById('quiz-area').style.display = 'block';
+    document.getElementById('quiz-results').classList.remove('show');
+    initQuiz();
+  }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  const fcActive = document.getElementById('flashcards').classList.contains('active');
+  if (fcActive) {
+    if (e.key === 'ArrowRight') nextCard();
+    if (e.key === 'ArrowLeft') prevCard();
+    if (e.key === ' ') { e.preventDefault(); flipCard(); }
+  }
+});
+</script>
+</body>
+</html>
